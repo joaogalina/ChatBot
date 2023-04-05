@@ -17,7 +17,7 @@ class BotMessage extends StatelessWidget {
           child: Text(content),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(15),
-            color: Colors.indigo,
+            color: Colors.blueGrey[300],
           ),
         ),
       ],

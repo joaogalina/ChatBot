@@ -1,4 +1,5 @@
 import 'package:chat_bot/components/chat_window.dart';
+import 'package:chat_bot/env/environment_variables.dart';
 import 'package:chat_bot/components/input_form.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
@@ -21,19 +22,19 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String? _response;
-  Map<String, String> messageMap = {};
+  List<Map<String, String>> messageList = [];
 
-  Future<String> getResponseFromGPT(String input) async {
-    var apiKey = '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';
-    var url = 'https://api.openai.com/v1/engines/text-davinci-003/completions';
+  Future<String> getResponseFromGPT(List<Map<String, String>> inputList) async {
+    var apiKey = API_KEY;
+    var url = 'https://api.openai.com/v1/chat/completions';
     var headers = {
       'Content-Type': 'application/json',
       'Authorization': 'Bearer $apiKey'
     };
 
     var body = json.encode({
-      'prompt': input,
+      'model': 'gpt-3.5-turbo',
+      'messages': inputList,
       'temperature': 0.7,
       'max_tokens': 248,
       'n': 1,
@@ -44,7 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
     if (response.statusCode == 200) {
       var jsonResponse = jsonDecode(utf8.decode(response.bodyBytes));
-      var output = jsonResponse['choices'][0]['text'];
+      var output = jsonResponse['choices'][0]['message']['content'];
       return output;
     } else {
       return response.body;
@@ -52,10 +53,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   _submitInput(input) {
-    getResponseFromGPT(input).then((value) {
+    setState(() {
+      messageList.add({"role": "user", "content": input});
+    });
+    getResponseFromGPT(messageList).then((value) {
       setState(() {
-        _response = value;
-        messageMap.addAll({input: _response!});
+        messageList.add({"role": "assistant", "content": value});
       });
     });
   }
@@ -74,10 +77,16 @@ class _MyHomePageState extends State<MyHomePage> {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           Container(
-            height: MediaQuery.of(context).viewInsets.bottom == 0 ? availableHeight * 0.8 : (availableHeight - MediaQuery.of(context).viewInsets.bottom) * 0.7,
-            child: ChatWindow(messageMap),
+            height: MediaQuery.of(context).viewInsets.bottom == 0
+                ? availableHeight * 0.8
+                : (availableHeight - MediaQuery.of(context).viewInsets.bottom) *
+                    0.7,
+            child: ChatWindow(messageList),
           ),
-          InputForm(_submitInput),
+          Padding(
+            padding: const EdgeInsets.all(5),
+            child: InputForm(_submitInput),
+          ),
         ],
       ),
     );
